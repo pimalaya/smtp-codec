@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = [
+    "smtp-codec",
+    "smtp-types",
+]
+
+[workspace.package]
+rust-version = "1.85"

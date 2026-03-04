@@ -1,0 +1,49 @@
+[package]
+name = "smtp-codec"
+description = "Rock-solid and complete codec for SMTP"
+keywords = ["email", "smtp", "codec", "parser"]
+categories = ["email", "parser-implementations", "encoding", "network-programming"]
+version = "0.1.0"
+authors = ["soywod"]
+repository = "https://github.com/soywod/smtp-codec"
+license = "MIT OR Apache-2.0"
+rust-version.workspace = true
+edition = "2024"
+exclude = [
+    ".github",
+]
+
+[features]
+default = []
+
+# Expose internal parsers for fuzzing
+fuzz = []
+
+# SMTP quirks
+# Make `\r` in `\r\n` optional.
+quirk_crlf_relaxed = []
+
+# <Forward to smtp-types>
+arbitrary = ["smtp-types/arbitrary"]
+serde = ["smtp-types/serde"]
+
+# SMTP Extensions
+starttls = ["smtp-types/starttls"]
+ext_auth = ["smtp-types/ext_auth"]
+ext_size = ["smtp-types/ext_size"]
+ext_8bitmime = ["smtp-types/ext_8bitmime"]
+ext_pipelining = ["smtp-types/ext_pipelining"]
+ext_smtputf8 = ["smtp-types/ext_smtputf8"]
+ext_enhancedstatuscodes = ["smtp-types/ext_enhancedstatuscodes"]
+# </Forward to smtp-types>
+
+[dependencies]
+abnf-core = "0.6.0"
+base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+smtp-types = { version = "0.1.0", path = "../smtp-types", default-features = false }
+nom = { version = "7", default-features = false }
+log = { version = "0.4.28", default-features = false }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]

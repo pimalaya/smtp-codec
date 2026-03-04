@@ -1,0 +1,42 @@
+[package]
+name = "smtp-types"
+description = "Misuse-resistant data structures for SMTP"
+keywords = ["email", "smtp", "types"]
+categories = ["email", "data-structures", "network-programming"]
+version = "0.1.0"
+authors = ["soywod"]
+repository = "https://github.com/soywod/smtp-codec"
+license = "MIT OR Apache-2.0"
+rust-version.workspace = true
+edition = "2024"
+exclude = [
+    ".github",
+]
+
+[features]
+arbitrary = ["dep:arbitrary"]
+serde = ["dep:serde"]
+
+# SMTP Extensions
+starttls = []
+ext_auth = []
+ext_size = []
+ext_8bitmime = []
+ext_pipelining = []
+ext_smtputf8 = []
+ext_enhancedstatuscodes = []
+
+[dependencies]
+arbitrary = { version = "1.4.2", optional = true, default-features = false, features = ["derive"] }
+base64 = { version = "0.22", default-features = false, features = ["alloc"] }
+bounded-static-derive = { version = "0.8.0", default-features = false }
+bounded-static = { version = "0.8.0", default-features = false, features = ["alloc"] }
+serde = { version = "1.0.228", features = ["derive"], optional = true }
+thiserror = "2.0.17"
+
+[dev-dependencies]
+serde_json = { version = "1.0.145" }
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
