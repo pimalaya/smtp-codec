@@ -32,10 +32,10 @@ base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 bounded-static-derive = { version = "0.8.0", default-features = false }
 bounded-static = { version = "0.8.0", default-features = false, features = ["alloc"] }
 serde = { version = "1.0.228", features = ["derive"], optional = true }
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 
 [dev-dependencies]
-serde_json = { version = "1.0.145" }
+serde_json = { version = "1.0.149" }
 
 [package.metadata.docs.rs]
 all-features = true
