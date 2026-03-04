@@ -1,0 +1,94 @@
+[package]
+name = "smtp-codec-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2024"
+license = "MIT OR Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[workspace]
+
+[features]
+# <Forward to smtp-types>
+arbitrary_simplified = []
+# </Forward to smtp-types>
+
+# <Forward to smtp-codec>
+# SMTP
+starttls = ["smtp-codec/starttls"]
+
+# SMTP Extensions
+ext_auth = ["smtp-codec/ext_auth"]
+ext_size = ["smtp-codec/ext_size"]
+ext_8bitmime = ["smtp-codec/ext_8bitmime"]
+ext_pipelining = ["smtp-codec/ext_pipelining"]
+ext_smtputf8 = ["smtp-codec/ext_smtputf8"]
+ext_enhancedstatuscodes = ["smtp-codec/ext_enhancedstatuscodes"]
+
+# SMTP quirks
+quirk_crlf_relaxed = ["smtp-codec/quirk_crlf_relaxed"]
+# </Forward to smtp-codec>
+
+# Use (most) SMTP extensions.
+ext = [
+    "starttls",
+    "ext_auth",
+    "ext_size",
+    "ext_8bitmime",
+    "ext_pipelining",
+    "ext_smtputf8",
+    "ext_enhancedstatuscodes",
+]
+# Enable `Debug`-printing during parsing. This is useful to analyze crashes.
+debug = []
+
+[dependencies]
+arbitrary = "1.4.2"
+smtp-codec = { path = "..", features = ["fuzz"] }
+smtp-types = { path = "../../smtp-types", features = ["arbitrary"] }
+libfuzzer-sys = "0.4"
+
+[[bin]]
+name = "greeting"
+path = "fuzz_targets/greeting.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "command"
+path = "fuzz_targets/command.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "response"
+path = "fuzz_targets/response.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "greeting_to_bytes_and_back"
+path = "fuzz_targets/greeting_to_bytes_and_back.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "command_to_bytes_and_back"
+path = "fuzz_targets/command_to_bytes_and_back.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "response_to_bytes_and_back"
+path = "fuzz_targets/response_to_bytes_and_back.rs"
+test = false
+doc = false
+bench = false

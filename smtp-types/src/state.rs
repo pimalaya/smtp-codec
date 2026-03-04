@@ -62,11 +62,12 @@ use serde::{Deserialize, Serialize};
 /// RFC 5321 Section 3: The SMTP Procedures
 #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ToStatic, Default)]
 pub enum State {
     /// Initial state after connection, waiting for server greeting.
     ///
     /// The client should wait for a 220 response from the server.
+    #[default]
     Connect,
 
     /// After receiving the 220 greeting, before EHLO/HELO.
@@ -100,7 +101,7 @@ pub enum State {
     /// After DATA command, transferring message content.
     ///
     /// In this state, the client sends the message content,
-    /// terminated by <CRLF>.<CRLF>.
+    /// terminated by `<CRLF>.<CRLF>`.
     Data,
 
     /// Session ended (after QUIT or server disconnect).
@@ -138,12 +139,6 @@ impl State {
     /// Returns true if we're in the middle of a mail transaction.
     pub fn in_transaction(&self) -> bool {
         matches!(self, State::Mail | State::Rcpt | State::Data)
-    }
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Connect
     }
 }
 

@@ -56,8 +56,7 @@ cargo_hack mode: install_cargo_hack
         ext_8bitmime,\
         ext_pipelining,\
         ext_smtputf8,\
-        ext_enhancedstatuscodes \
-        --group-features \
+        ext_enhancedstatuscodes,\
         quirk_crlf_relaxed\
         {{ mode }}
     cargo hack check -p smtp-types \
@@ -90,8 +89,8 @@ cargo_deny: install_cargo_deny
 
 [private]
 cargo_semver: install_cargo_semver_checks
-    cargo semver-checks check-release --only-explicit-features -p smtp-codec
-    cargo semver-checks check-release --only-explicit-features -p smtp-types
+    cargo semver-checks check-release --only-explicit-features --baseline-rev HEAD -p smtp-codec
+    cargo semver-checks check-release --only-explicit-features --baseline-rev HEAD -p smtp-types
 
 # Test multiple configurations
 test: (test_impl ""           ""               ) \
@@ -129,6 +128,18 @@ coverage: install_rust_llvm_tools_preview install_cargo_grcov
     rm target/coverage/*.profraw
     rm -rf target/coverage/debug
 
+# Fuzz all targets
+[linux]
+fuzz runs="25000": install_cargo_fuzz
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd smtp-codec
+    for fuzz_target in $(cargo +nightly fuzz list)
+    do
+        echo "# Fuzzing ${fuzz_target}";
+        cargo +nightly fuzz run --features=ext ${fuzz_target} -- -dict=fuzz/terminals.dict -max_len=256 -only_ascii=1 -runs={{ runs }};
+    done
+
 # Check MSRV
 check_msrv: install_rust_msrv
     cargo '+{{ msrv }}' check --locked \
@@ -160,6 +171,7 @@ install: install_rust_msrv \
          install_rust_llvm_tools_preview \
          install_cargo_clippy \
          install_cargo_deny \
+         install_cargo_fuzz \
          install_cargo_grcov \
          install_cargo_hack \
          install_cargo_semver_checks
@@ -195,6 +207,10 @@ install_cargo_grcov:
 [private]
 install_cargo_hack:
     cargo install --locked cargo-hack
+
+[private]
+install_cargo_fuzz: install_rust_nightly
+    cargo install cargo-fuzz
 
 [private]
 install_cargo_semver_checks:

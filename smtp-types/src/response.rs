@@ -15,8 +15,9 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "ext_auth")]
+use crate::auth::AuthMechanism;
 use crate::{
-    auth::AuthMechanism,
     core::{Atom, Domain, Text, Vec1},
     error::{ValidationError, ValidationErrorKind},
 };
@@ -556,7 +557,9 @@ impl<'a> Arbitrary<'a> for Capability<'static> {
             variant_count += 1;
         }
 
+        #[allow(unused_variables)]
         let variant: u8 = u.int_in_range(0..=(variant_count - 1))?;
+        #[allow(unused_mut, unused_variables)]
         let mut idx = 0u8;
 
         #[cfg(feature = "ext_size")]
@@ -694,7 +697,9 @@ impl<'a> EhloResponse<'a> {
             Capability::EnhancedStatusCodes => name_upper == "ENHANCEDSTATUSCODES",
             #[cfg(feature = "ext_auth")]
             Capability::Auth(_) => name_upper == "AUTH",
-            Capability::Other { keyword, .. } => keyword.as_ref().to_ascii_uppercase() == name_upper,
+            Capability::Other { keyword, .. } => {
+                keyword.as_ref().to_ascii_uppercase() == name_upper
+            }
         })
     }
 

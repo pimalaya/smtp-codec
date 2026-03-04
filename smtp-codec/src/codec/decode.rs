@@ -10,24 +10,23 @@ use std::{
 };
 
 use nom::error::{ErrorKind, FromExternalError, ParseError};
-use smtp_types::IntoStatic;
-
 #[cfg(feature = "ext_auth")]
 use smtp_types::auth::AuthenticateData;
 use smtp_types::{
+    IntoStatic,
     command::Command,
     response::{EhloResponse, Greeting, Response},
 };
 
 #[cfg(feature = "ext_auth")]
+use crate::AuthenticateDataCodec;
+#[cfg(feature = "ext_auth")]
 use crate::auth::authenticate_data;
 use crate::{
+    CommandCodec, EhloResponseCodec, GreetingCodec, ResponseCodec,
     command::command,
     response::{ehlo_response, greeting, response},
-    CommandCodec, EhloResponseCodec, GreetingCodec, ResponseCodec,
 };
-#[cfg(feature = "ext_auth")]
-use crate::AuthenticateDataCodec;
 
 /// An extended version of [`nom::IResult`].
 pub(crate) type SMTPResult<'a, I, O> = Result<(I, O), nom::Err<SMTPParseError<'a, I>>>;
@@ -120,10 +119,8 @@ pub trait Decoder {
     type Message<'a>: Sized;
     type Error<'a>;
 
-    fn decode<'a>(
-        &self,
-        input: &'a [u8],
-    ) -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>>;
+    fn decode<'a>(&self, input: &'a [u8])
+    -> Result<(&'a [u8], Self::Message<'a>), Self::Error<'a>>;
 
     fn decode_static<'a>(
         &self,

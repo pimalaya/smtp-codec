@@ -112,7 +112,11 @@ mod tests {
 
         for (input, expected_name) in tests {
             let result = CommandCodec::default().decode(input);
-            assert!(result.is_ok(), "Failed to parse: {:?}", std::str::from_utf8(input));
+            assert!(
+                result.is_ok(),
+                "Failed to parse: {:?}",
+                std::str::from_utf8(input)
+            );
             let (_, cmd) = result.unwrap();
             assert_eq!(cmd.name(), expected_name);
         }

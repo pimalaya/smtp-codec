@@ -31,7 +31,8 @@ fn arbitrary_alphanum(u: &mut Unstructured) -> arbitrary::Result<char> {
 
 #[cfg(feature = "arbitrary")]
 fn arbitrary_atext(u: &mut Unstructured) -> arbitrary::Result<char> {
-    const CHARS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'*+-/=?^_`{|}~";
+    const CHARS: &[u8] =
+        b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'*+-/=?^_`{|}~";
     let idx = u.choose_index(CHARS.len())?;
     Ok(CHARS[idx] as char)
 }
@@ -43,6 +44,7 @@ fn arbitrary_text_char(u: &mut Unstructured) -> arbitrary::Result<char> {
     Ok(c as char)
 }
 
+#[cfg(feature = "ext_auth")]
 macro_rules! impl_try_from {
     ($via:ty, $lifetime:lifetime, $from:ty, $target:ty) => {
         impl<$lifetime> TryFrom<$from> for $target {
@@ -57,6 +59,7 @@ macro_rules! impl_try_from {
     };
 }
 
+#[cfg(feature = "ext_auth")]
 pub(crate) use impl_try_from;
 
 // =================================================================================================
@@ -100,8 +103,7 @@ impl<'a> Domain<'a> {
         }
 
         // Check it's valid UTF-8 and contains only valid domain characters
-        let s = from_utf8(value)
-            .map_err(|_| ValidationError::new(ValidationErrorKind::Invalid))?;
+        let s = from_utf8(value).map_err(|_| ValidationError::new(ValidationErrorKind::Invalid))?;
 
         // Check each subdomain
         for subdomain in s.split('.') {
@@ -415,8 +417,7 @@ impl<'a> LocalPart<'a> {
         }
 
         // Check for valid UTF-8
-        let _ = from_utf8(value)
-            .map_err(|_| ValidationError::new(ValidationErrorKind::Invalid))?;
+        let _ = from_utf8(value).map_err(|_| ValidationError::new(ValidationErrorKind::Invalid))?;
 
         // Check each character is valid for local-part (simplified check)
         for (i, &b) in value.iter().enumerate() {
@@ -566,9 +567,10 @@ impl<'a> Arbitrary<'a> for Mailbox<'static> {
 /// ```
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(tag = "type", content = "content"))]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, ToStatic, Default)]
 pub enum ReversePath<'a> {
     /// Null reverse path (<>)
+    #[default]
     Null,
     /// A mailbox address
     Mailbox(Mailbox<'a>),
@@ -580,12 +582,6 @@ impl Display for ReversePath<'_> {
             ReversePath::Null => write!(f, "<>"),
             ReversePath::Mailbox(mailbox) => write!(f, "<{mailbox}>"),
         }
-    }
-}
-
-impl Default for ReversePath<'_> {
-    fn default() -> Self {
-        ReversePath::Null
     }
 }
 
@@ -989,7 +985,9 @@ where
 impl<T> Vec1<T> {
     pub fn validate(value: &[T]) -> Result<(), ValidationError> {
         if value.is_empty() {
-            return Err(ValidationError::new(ValidationErrorKind::NotEnough { min: 1 }));
+            return Err(ValidationError::new(ValidationErrorKind::NotEnough {
+                min: 1,
+            }));
         }
         Ok(())
     }

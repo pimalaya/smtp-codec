@@ -4,6 +4,9 @@ members = [
     "smtp-codec",
     "smtp-types",
 ]
+exclude = [
+    "smtp-codec/fuzz",
+]
 
 [workspace.package]
 rust-version = "1.85"

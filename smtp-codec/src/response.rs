@@ -9,9 +9,19 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
+#[cfg(any(
+    feature = "ext_size",
+    feature = "ext_8bitmime",
+    feature = "ext_pipelining",
+    feature = "starttls",
+    feature = "ext_smtputf8",
+    feature = "ext_enhancedstatuscodes",
+    feature = "ext_auth"
+))]
+use nom::bytes::streaming::tag_no_case;
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while, take_while1},
+    bytes::streaming::{tag, take_while, take_while1},
     character::streaming::char,
     combinator::{map, opt},
     multi::many0,
@@ -25,8 +35,10 @@ use smtp_types::{
 
 #[cfg(feature = "ext_auth")]
 use crate::auth::auth_type;
+#[cfg(feature = "ext_size")]
+use crate::core::number;
 use crate::{
-    core::{domain, number, reply_code, text},
+    core::{domain, reply_code, text},
     decode::SMTPResult,
 };
 
@@ -38,12 +50,7 @@ use crate::{
 pub(crate) fn greeting(input: &[u8]) -> SMTPResult<'_, &[u8], Greeting<'_>> {
     map(
         terminated(
-            tuple((
-                tag(b"220"),
-                sp,
-                domain,
-                opt(preceded(sp, text)),
-            )),
+            tuple((tag(b"220"), sp, domain, opt(preceded(sp, text)))),
             crlf,
         ),
         |(_, _, domain, text)| Greeting::new(domain, text),
@@ -58,10 +65,8 @@ pub(crate) fn greeting(input: &[u8]) -> SMTPResult<'_, &[u8], Greeting<'_>> {
 /// ```
 pub(crate) fn response(input: &[u8]) -> SMTPResult<'_, &[u8], Response<'_>> {
     // First, try to parse continuation lines (code + "-")
-    let (input, cont_lines) = many0(terminated(
-        tuple((reply_code, char('-'), opt(text))),
-        crlf,
-    ))(input)?;
+    let (input, cont_lines) =
+        many0(terminated(tuple((reply_code, char('-'), opt(text))), crlf))(input)?;
 
     // Then parse the final line (code + " " or just code)
     let (input, (code, _, final_text)) = terminated(
@@ -120,20 +125,16 @@ pub(crate) fn ehlo_response(input: &[u8]) -> SMTPResult<'_, &[u8], EhloResponse<
     }
 
     // Parse continuation lines
-    let (input, cont_lines) = many0(terminated(
-        preceded(tag(b"250-"), capability_line),
-        crlf,
-    ))(input)?;
+    let (input, cont_lines) =
+        many0(terminated(preceded(tag(b"250-"), capability_line), crlf))(input)?;
 
     for cap in cont_lines {
         ehlo.add_capability(cap);
     }
 
     // Parse final line
-    let (input, final_cap) = terminated(
-        preceded(tuple((tag(b"250"), sp)), capability_line),
-        crlf,
-    )(input)?;
+    let (input, final_cap) =
+        terminated(preceded(tuple((tag(b"250"), sp)), capability_line), crlf)(input)?;
 
     ehlo.add_capability(final_cap);
 
@@ -164,10 +165,7 @@ fn capability_line(input: &[u8]) -> SMTPResult<'_, &[u8], Capability<'_>> {
 #[cfg(feature = "ext_size")]
 fn size_capability(input: &[u8]) -> SMTPResult<'_, &[u8], Capability<'_>> {
     map(
-        preceded(
-            tag_no_case(b"SIZE"),
-            opt(preceded(sp, number)),
-        ),
+        preceded(tag_no_case(b"SIZE"), opt(preceded(sp, number))),
         Capability::Size,
     )(input)
 }
@@ -215,12 +213,16 @@ fn auth_capability(input: &[u8]) -> SMTPResult<'_, &[u8], Capability<'_>> {
 fn other_capability(input: &[u8]) -> SMTPResult<'_, &[u8], Capability<'_>> {
     map(
         tuple((
-            map(take_while1(|b| b != b' ' && b != b'\r' && b != b'\n'), |bytes: &[u8]| {
-                Atom::unvalidated(std::str::from_utf8(bytes).unwrap())
-            }),
-            opt(preceded(sp, map(take_while(is_text_char), |bytes: &[u8]| {
-                Cow::Borrowed(std::str::from_utf8(bytes).unwrap())
-            }))),
+            map(
+                take_while1(|b| b != b' ' && b != b'\r' && b != b'\n'),
+                |bytes: &[u8]| Atom::unvalidated(std::str::from_utf8(bytes).unwrap()),
+            ),
+            opt(preceded(
+                sp,
+                map(take_while(is_text_char), |bytes: &[u8]| {
+                    Cow::Borrowed(std::str::from_utf8(bytes).unwrap())
+                }),
+            )),
         )),
         |(keyword, params)| Capability::Other { keyword, params },
     )(input)
@@ -291,7 +293,8 @@ mod tests {
     #[cfg(feature = "ext_size")]
     #[test]
     fn test_size_capability() {
-        let (rem, ehlo) = ehlo_response(b"250-mail.example.com\r\n250-SIZE 10240000\r\n250 OK\r\n").unwrap();
+        let (rem, ehlo) =
+            ehlo_response(b"250-mail.example.com\r\n250-SIZE 10240000\r\n250 OK\r\n").unwrap();
         assert!(rem.is_empty());
         assert!(ehlo.has_capability("SIZE"));
     }
@@ -299,7 +302,8 @@ mod tests {
     #[cfg(feature = "ext_auth")]
     #[test]
     fn test_auth_capability() {
-        let (rem, ehlo) = ehlo_response(b"250-mail.example.com\r\n250-AUTH PLAIN LOGIN\r\n250 OK\r\n").unwrap();
+        let (rem, ehlo) =
+            ehlo_response(b"250-mail.example.com\r\n250-AUTH PLAIN LOGIN\r\n250 OK\r\n").unwrap();
         assert!(rem.is_empty());
         assert!(ehlo.has_capability("AUTH"));
         let mechs = ehlo.auth_mechanisms().unwrap();

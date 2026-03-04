@@ -4,7 +4,10 @@
 
 use std::{borrow::Borrow, io::Write};
 
-use base64::{engine::general_purpose::STANDARD as base64, Engine};
+#[cfg(feature = "ext_auth")]
+use base64::{Engine, engine::general_purpose::STANDARD as base64};
+#[cfg(feature = "ext_auth")]
+use smtp_types::auth::{AuthMechanism, AuthenticateData};
 use smtp_types::{
     command::Command,
     core::{Atom, Domain, EhloDomain, ForwardPath, Parameter, ReversePath, Text},
@@ -12,11 +15,8 @@ use smtp_types::{
 };
 
 #[cfg(feature = "ext_auth")]
-use smtp_types::auth::{AuthMechanism, AuthenticateData};
-
-use crate::{CommandCodec, GreetingCodec, ResponseCodec};
-#[cfg(feature = "ext_auth")]
 use crate::AuthenticateDataCodec;
+use crate::{CommandCodec, GreetingCodec, ResponseCodec};
 
 /// Encoder trait for SMTP messages.
 ///
@@ -310,10 +310,22 @@ mod tests {
 
     #[test]
     fn test_encode_simple_commands() {
-        assert_eq!(CommandCodec::default().encode(&Command::data()), b"DATA\r\n");
-        assert_eq!(CommandCodec::default().encode(&Command::quit()), b"QUIT\r\n");
-        assert_eq!(CommandCodec::default().encode(&Command::rset()), b"RSET\r\n");
-        assert_eq!(CommandCodec::default().encode(&Command::noop()), b"NOOP\r\n");
+        assert_eq!(
+            CommandCodec::default().encode(&Command::data()),
+            b"DATA\r\n"
+        );
+        assert_eq!(
+            CommandCodec::default().encode(&Command::quit()),
+            b"QUIT\r\n"
+        );
+        assert_eq!(
+            CommandCodec::default().encode(&Command::rset()),
+            b"RSET\r\n"
+        );
+        assert_eq!(
+            CommandCodec::default().encode(&Command::noop()),
+            b"NOOP\r\n"
+        );
     }
 
     #[test]

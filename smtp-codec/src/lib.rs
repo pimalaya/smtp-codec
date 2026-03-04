@@ -17,10 +17,7 @@
 //! ### Example
 //!
 //! ```rust
-//! use smtp_codec::{
-//!     GreetingCodec,
-//!     decode::Decoder,
-//! };
+//! use smtp_codec::{GreetingCodec, decode::Decoder};
 //!
 //! let input = b"220 mail.example.com ESMTP ready\r\n<remaining>";
 //! let (remaining, greeting) = GreetingCodec::default().decode(input).unwrap();
@@ -36,11 +33,7 @@
 //! ### Example
 //!
 //! ```rust
-//! use smtp_codec::{
-//!     CommandCodec,
-//!     encode::Encoder,
-//!     smtp_types::command::Command,
-//! };
+//! use smtp_codec::{CommandCodec, encode::Encoder, smtp_types::command::Command};
 //!
 //! let cmd = Command::quit();
 //! let bytes = CommandCodec::default().encode(&cmd);
@@ -84,7 +77,6 @@ mod core;
 mod response;
 
 pub use codec::*;
-
 // Re-export smtp-types for convenience.
 pub use smtp_types;
 

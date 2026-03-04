@@ -6,17 +6,25 @@
 use std::{borrow::Cow, net::Ipv4Addr, str::from_utf8};
 
 use abnf_core::{is_alpha, is_digit};
-use base64::{engine::general_purpose::STANDARD as _base64, Engine};
+#[cfg(feature = "ext_auth")]
+use base64::{Engine, engine::general_purpose::STANDARD as _base64};
+#[cfg(feature = "ext_size")]
+use nom::character::streaming::digit1;
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while, take_while1, take_while_m_n},
-    character::streaming::digit1,
+    bytes::streaming::{tag, tag_no_case, take_while, take_while_m_n, take_while1},
     combinator::{map, map_res, opt, recognize, verify},
     sequence::{delimited, preceded, tuple},
 };
 use smtp_types::{
-    core::{AddressLiteral, Atom, Domain, EhloDomain, ForwardPath, LocalPart, Mailbox, Parameter, ReversePath, Text},
-    utils::indicators::{is_atext, is_dcontent, is_esmtp_keyword_char, is_esmtp_value_char, is_ldh_str_char, is_let_dig, is_text_char},
+    core::{
+        AddressLiteral, Atom, Domain, EhloDomain, ForwardPath, LocalPart, Mailbox, Parameter,
+        ReversePath, Text,
+    },
+    utils::indicators::{
+        is_atext, is_dcontent, is_esmtp_keyword_char, is_esmtp_value_char, is_ldh_str_char,
+        is_let_dig, is_text_char,
+    },
 };
 
 use crate::decode::SMTPResult;
@@ -24,6 +32,7 @@ use crate::decode::SMTPResult;
 // ----- Number ------------------------------------------------------------------------------------
 
 /// Parse a decimal number.
+#[cfg(feature = "ext_size")]
 pub(crate) fn number(input: &[u8]) -> SMTPResult<'_, &[u8], u64> {
     map_res(
         map(digit1, |val| from_utf8(val).unwrap()),
@@ -48,7 +57,10 @@ pub(crate) fn reply_code(input: &[u8]) -> SMTPResult<'_, &[u8], u16> {
 /// ```
 pub(crate) fn domain(input: &[u8]) -> SMTPResult<'_, &[u8], Domain<'_>> {
     map(
-        recognize(tuple((sub_domain, take_while(|b| is_ldh_str_char(b) || b == b'.')))),
+        recognize(tuple((
+            sub_domain,
+            take_while(|b| is_ldh_str_char(b) || b == b'.'),
+        ))),
         |bytes: &[u8]| {
             // Validate the domain structure
             let s = from_utf8(bytes).unwrap();
@@ -240,6 +252,7 @@ fn atom_raw(input: &[u8]) -> SMTPResult<'_, &[u8], &[u8]> {
 /// ```abnf
 /// Atom = 1*atext
 /// ```
+#[cfg(feature = "ext_auth")]
 pub(crate) fn atom(input: &[u8]) -> SMTPResult<'_, &[u8], Atom<'_>> {
     map(atom_raw, |bytes: &[u8]| {
         Atom::unvalidated(from_utf8(bytes).unwrap())
@@ -257,7 +270,6 @@ pub(crate) fn text(input: &[u8]) -> SMTPResult<'_, &[u8], Text<'_>> {
     })(input)
 }
 
-
 // ----- ESMTP Parameter ---------------------------------------------------------------------------
 
 /// ```abnf
@@ -265,10 +277,7 @@ pub(crate) fn text(input: &[u8]) -> SMTPResult<'_, &[u8], Text<'_>> {
 /// ```
 pub(crate) fn esmtp_param(input: &[u8]) -> SMTPResult<'_, &[u8], Parameter<'_>> {
     map(
-        tuple((
-            esmtp_keyword,
-            opt(preceded(tag(b"="), esmtp_value)),
-        )),
+        tuple((esmtp_keyword, opt(preceded(tag(b"="), esmtp_value)))),
         |(keyword, value)| match value {
             Some(v) => Parameter::with_value(keyword, v),
             None => Parameter::new(keyword),
@@ -303,6 +312,7 @@ fn esmtp_value(input: &[u8]) -> SMTPResult<'_, &[u8], Cow<'_, str>> {
 // ----- Base64 ------------------------------------------------------------------------------------
 
 /// Parse base64-encoded data.
+#[cfg(feature = "ext_auth")]
 pub(crate) fn base64_data(input: &[u8]) -> SMTPResult<'_, &[u8], Vec<u8>> {
     map_res(
         recognize(tuple((
@@ -314,6 +324,7 @@ pub(crate) fn base64_data(input: &[u8]) -> SMTPResult<'_, &[u8], Vec<u8>> {
 }
 
 /// Base64 character.
+#[cfg(feature = "ext_auth")]
 fn is_base64_char(b: u8) -> bool {
     is_alpha(b) || is_digit(b) || b == b'+' || b == b'/'
 }

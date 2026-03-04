@@ -11,9 +11,9 @@ use bounded_static_derive::ToStatic;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use crate::core::{Domain, EhloDomain, ForwardPath, Parameter, ReversePath};
 #[cfg(feature = "ext_auth")]
 use crate::{auth::AuthMechanism, secret::Secret};
-use crate::core::{Domain, EhloDomain, ForwardPath, Parameter, ReversePath};
 
 /// An SMTP command.
 ///
@@ -97,7 +97,7 @@ pub enum Command<'a> {
     /// DATA - begins the mail data transfer.
     ///
     /// After this command, the client sends the message content,
-    /// terminated by <CRLF>.<CRLF>.
+    /// terminated by `<CRLF>.<CRLF>`.
     ///
     /// # ABNF
     ///
@@ -250,10 +250,7 @@ impl<'a> Command<'a> {
     }
 
     /// Creates a MAIL FROM command with parameters.
-    pub fn mail_with_params(
-        reverse_path: ReversePath<'a>,
-        parameters: Vec<Parameter<'a>>,
-    ) -> Self {
+    pub fn mail_with_params(reverse_path: ReversePath<'a>, parameters: Vec<Parameter<'a>>) -> Self {
         Command::Mail {
             reverse_path,
             parameters,
@@ -269,10 +266,7 @@ impl<'a> Command<'a> {
     }
 
     /// Creates a RCPT TO command with parameters.
-    pub fn rcpt_with_params(
-        forward_path: ForwardPath<'a>,
-        parameters: Vec<Parameter<'a>>,
-    ) -> Self {
+    pub fn rcpt_with_params(forward_path: ForwardPath<'a>, parameters: Vec<Parameter<'a>>) -> Self {
         Command::Rcpt {
             forward_path,
             parameters,

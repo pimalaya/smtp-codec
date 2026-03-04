@@ -9,18 +9,16 @@ use abnf_core::streaming::crlf;
 #[cfg(feature = "quirk_crlf_relaxed")]
 use abnf_core::streaming::crlf_relaxed as crlf;
 use abnf_core::streaming::sp;
+#[cfg(feature = "ext_auth")]
+use nom::bytes::streaming::tag;
 use nom::{
     branch::alt,
-    bytes::streaming::{tag, tag_no_case, take_while},
+    bytes::streaming::{tag_no_case, take_while},
     combinator::{map, opt, value},
     multi::many0,
     sequence::{preceded, terminated, tuple},
 };
-use smtp_types::{
-    command::Command,
-    core::Parameter,
-    utils::indicators::is_text_char,
-};
+use smtp_types::{command::Command, core::Parameter, utils::indicators::is_text_char};
 
 #[cfg(feature = "ext_auth")]
 use crate::auth::auth_type;
@@ -69,9 +67,10 @@ fn ehlo(input: &[u8]) -> SMTPResult<'_, &[u8], Command<'_>> {
 /// helo = "HELO" SP Domain CRLF
 /// ```
 fn helo(input: &[u8]) -> SMTPResult<'_, &[u8], Command<'_>> {
-    map(preceded(tuple((tag_no_case(b"HELO"), sp)), domain), |domain| {
-        Command::Helo { domain }
-    })(input)
+    map(
+        preceded(tuple((tag_no_case(b"HELO"), sp)), domain),
+        |domain| Command::Helo { domain },
+    )(input)
 }
 
 /// ```abnf
@@ -179,10 +178,9 @@ fn help(input: &[u8]) -> SMTPResult<'_, &[u8], Command<'_>> {
 
 /// Parse a string argument (free-form text until CRLF).
 fn string_arg(input: &[u8]) -> SMTPResult<'_, &[u8], Cow<'_, str>> {
-    map(
-        take_while(is_text_char),
-        |bytes: &[u8]| Cow::Borrowed(std::str::from_utf8(bytes).unwrap()),
-    )(input)
+    map(take_while(is_text_char), |bytes: &[u8]| {
+        Cow::Borrowed(std::str::from_utf8(bytes).unwrap())
+    })(input)
 }
 
 /// ```abnf
