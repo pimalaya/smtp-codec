@@ -41,7 +41,7 @@ ext_enhancedstatuscodes = ["smtp-types/ext_enhancedstatuscodes"]
 abnf-core = "0.6.0"
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
 smtp-types = { version = "0.2.0", path = "../smtp-types", default-features = false }
-nom = { version = "7", default-features = false, features = ["alloc"] }
+nom = { version = "8", default-features = false, features = ["alloc"] }
 log = { version = "0.4.29", default-features = false }
 
 [package.metadata.docs.rs]
